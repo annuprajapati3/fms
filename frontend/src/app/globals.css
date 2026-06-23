@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  FMS Visual Identity — "Ledger & Seal"
+  Grounded in freight-forwarder and customs-house tradition: deep royal blue
+  (the ink of a bill of lading, the hull of a freight carrier) structures the
+  interface, and a single warm gold is reserved for the things that matter
+  most - the current financial year, key totals, focus states - the way a
+  wax seal or brass fitting marks the one detail worth noticing on an
+  otherwise disciplined document. Gold is rare on purpose; if it shows up
+  everywhere it stops meaning anything.
+*/
+
+@layer base {
+  :root {
+    /* Parchment workspace - a hair warmer than pure white, paper-like without tipping into cream-cliché */
+    --background: 40 20% 98%;
+    --foreground: 222 47% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 10%;
+
+    /* Royal blue - structural color: sidebar, primary actions, active states */
+    --primary: 224 64% 33%;
+    --primary-foreground: 40 20% 98%;
+
+    --secondary: 220 24% 95%;
+    --secondary-foreground: 222 47% 10%;
+
+    --muted: 220 24% 95%;
+    --muted-foreground: 220 14% 42%;
+
+    --accent: 220 30% 93%;
+    --accent-foreground: 224 64% 33%;
+
+    --destructive: 4 72% 47%;
+    --destructive-foreground: 40 20% 98%;
+
+    --success: 152 56% 30%;
+    --success-foreground: 40 20% 98%;
+
+    --warning: 38 80% 44%;
+    --warning-foreground: 40 20% 98%;
+
+    /* Gold - the signature accent. Reserved for: current-FY marker, active nav rule, focus ring, key KPI emphasis. */
+    --gold: 40 65% 45%;
+    --gold-foreground: 222 47% 10%;
+
+    --border: 220 20% 89%;
+    --input: 220 20% 89%;
+    --ring: 40 65% 45%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 224 38% 8%;
+    --foreground: 40 20% 96%;
+
+    --card: 224 32% 11%;
+    --card-foreground: 40 20% 96%;
+
+    --popover: 224 32% 11%;
+    --popover-foreground: 40 20% 96%;
+
+    --primary: 217 70% 58%;
+    --primary-foreground: 224 38% 8%;
+
+    --secondary: 222 28% 17%;
+    --secondary-foreground: 40 20% 96%;
+
+    --muted: 222 28% 17%;
+    --muted-foreground: 220 14% 65%;
+
+    --accent: 222 28% 18%;
+    --accent-foreground: 40 65% 60%;
+
+    --destructive: 4 63% 42%;
+    --destructive-foreground: 40 20% 96%;
+
+    --success: 152 50% 42%;
+    --success-foreground: 224 38% 8%;
+
+    --warning: 38 80% 52%;
+    --warning-foreground: 224 38% 8%;
+
+    --gold: 40 70% 55%;
+    --gold-foreground: 224 38% 8%;
+
+    --border: 222 28% 19%;
+    --input: 222 28% 19%;
+    --ring: 40 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: 'tnum' 1; /* tabular numbers - this is a numbers-heavy ERP */
+  }
+
+  /* Visible keyboard focus everywhere, gold ring per the signature accent */
+  :focus-visible {
+    outline: 2px solid hsl(var(--gold));
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  /* The signature element: a gold rule marking "this is the active/current one".
+     Used in exactly two places - active sidebar item, current-FY card - so it
+     stays meaningful instead of becoming decoration. */
+  .signature-rule {
+    position: relative;
+  }
+  .signature-rule::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: hsl(var(--gold));
+    border-radius: 0 2px 2px 0;
+  }
+
+  .signature-rule-top::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    height: 3px;
+    width: auto;
+    bottom: auto;
+    background: hsl(var(--gold));
+    border-radius: 2px 2px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

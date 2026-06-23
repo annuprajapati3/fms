@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =========================================================================
+// ENUMS
+// =========================================================================
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  LOCKED
+}
+
+enum PermissionAction {
+  CREATE
+  EDIT
+  DELETE
+  APPROVE
+  REJECT
+  VIEW
+  EXPORT
+  PRINT
+}
+
+enum FinancialYearStatus {
+  UPCOMING
+  ACTIVE
+  CLOSED
+  LOCKED
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  LOGIN_FAILED
+  PASSWORD_CHANGE
+  PASSWORD_RESET
+  PERMISSION_CHANGE
+  APPROVE
+  REJECT
+  EXPORT
+  PRINT
+}
+
+// =========================================================================
+// ORGANIZATION STRUCTURE: COMPANY -> DIVISION -> BRANCH
+// =========================================================================
+
+model Company {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  legalName   String?
+  gstin       String?
+  pan         String?
+  address     String?
+  city        String?
+  state       String?
+  country     String   @default("India")
+  pincode     String?
+  phone       String?
+  email       String?
+  logoUrl     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  divisions       Division[]
+  branches        Branch[]
+  financialYears  FinancialYear[]
+  userCompanies   UserCompany[]
+  roles           Role[]
+  auditLogs       AuditLog[]
+
+  @@index([isActive])
+  @@map("companies")
+}
+
+model Division {
+  id          String   @id @default(uuid())
+  companyId   String
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company   Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  branches  Branch[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("divisions")
+}
+
+model Branch {
+  id          String   @id @default(uuid())
+  companyId   String
+  divisionId  String?
+  code        String
+  name        String
+  type        String?  // HQ, Depot, Warehouse, etc.
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+  phone       String?
+  email       String?
+  gstin       String?
+  isHeadOffice Boolean @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company        Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  division       Division?      @relation(fields: [divisionId], references: [id], onDelete: SetNull)
+  userBranches   UserBranch[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([divisionId])
+  @@map("branches")
+}
+
+// =========================================================================
+// FINANCIAL YEAR
+// =========================================================================
+
+model FinancialYear {
+  id          String              @id @default(uuid())
+  companyId   String
+  code        String              // e.g. "2025-26"
+  startDate   DateTime
+  endDate     DateTime
+  status      FinancialYearStatus @default(UPCOMING)
+  isCurrent   Boolean             @default(false)
+  lockedAt    DateTime?
+  lockedById  String?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  lockedBy   User?   @relation("FYLockedBy", fields: [lockedById], references: [id], onDelete: SetNull)
+
+  @@unique([companyId, code])
+  @@index([companyId, isCurrent])
+  @@map("financial_years")
+}
+
+// =========================================================================
+// USERS
+// =========================================================================
+
+model User {
+  id                  String     @id @default(uuid())
+  employeeCode        String?    @unique
+  firstName           String
+  lastName            String?
+  email               String     @unique
+  phone               String?
+  passwordHash        String
+  status              UserStatus @default(ACTIVE)
+  avatarUrl           String?
+  mustChangePassword  Boolean    @default(false)
+  failedLoginCount    Int        @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  lastLoginIp         String?
+  passwordChangedAt   DateTime?
+  defaultCompanyId    String?
+  defaultBranchId     String?
+  createdAt           DateTime   @default(now())
+  updatedAt            DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  userCompanies   UserCompany[]
+  userBranches    UserBranch[]
+  userRoles       UserRole[]
+  refreshTokens   RefreshToken[]
+  auditLogs       AuditLog[]        @relation("AuditActor")
+  passwordResets  PasswordReset[]
+  lockedFYs       FinancialYear[]   @relation("FYLockedBy")
+
+  @@index([email])
+  @@index([status])
+  @@map("users")
+}
+
+// User <-> Company (multi-company access)
+model UserCompany {
+  id         String   @id @default(uuid())
+  userId     String
+  companyId  String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user     User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company  Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+  @@map("user_companies")
+}
+
+// User <-> Branch (multi-branch access)
+model UserBranch {
+  id         String   @id @default(uuid())
+  userId     String
+  branchId   String
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch  Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, branchId])
+  @@index([userId])
+  @@index([branchId])
+  @@map("user_branches")
+}
+
+// =========================================================================
+// RBAC: ROLES, PERMISSIONS, MODULES
+// =========================================================================
+
+// Logical module/submodule registry (seeded, not user-editable via API in Phase 1)
+model Module {
+  id           String   @id @default(uuid())
+  code         String   @unique  // e.g. "FLEET", "FLEET.VEHICLE"
+  name         String
+  parentId     String?
+  sortOrder    Int      @default(0)
+  isActive     Boolean  @default(true)
+
+  parent       Module?       @relation("ModuleHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children     Module[]      @relation("ModuleHierarchy")
+  permissions  Permission[]
+
+  @@index([parentId])
+  @@map("modules")
+}
+
+model Permission {
+  id          String            @id @default(uuid())
+  moduleId    String
+  action      PermissionAction
+  code        String            @unique // e.g. "FLEET.VEHICLE.CREATE"
+
+  module           Module             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  rolePermissions  RolePermission[]
+
+  @@unique([moduleId, action])
+  @@map("permissions")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  companyId   String?  // null = system/global role (e.g. Super Admin), else company-scoped custom role
+  code        String
+  name        String
+  description String?
+  isSystem    Boolean  @default(false) // system roles cannot be deleted/edited
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  company          Company?           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  rolePermissions  RolePermission[]
+  userRoles        UserRole[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@map("roles")
+}
+
+model RolePermission {
+  id            String   @id @default(uuid())
+  roleId        String
+  permissionId  String
+  createdAt     DateTime @default(now())
+
+  role        Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission  Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+// User <-> Role, scoped optionally to a company/branch context
+model UserRole {
+  id         String   @id @default(uuid())
+  userId     String
+  roleId     String
+  companyId  String?  // role applies within this company context (null = global, e.g. Super Admin)
+  branchId   String?  // optionally restrict to a specific branch
+  createdAt  DateTime @default(now())
+
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role    Role  @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, roleId, companyId, branchId])
+  @@index([userId])
+  @@index([roleId])
+  @@map("user_roles")
+}
+
+// =========================================================================
+// AUTH SUPPORT TABLES
+// =========================================================================
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  tokenHash   String    @unique
+  userAgent   String?
+  ip          String?
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  replacedBy  String?
+  createdAt   DateTime  @default(now())
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model PasswordReset {
+  id          String    @id @default(uuid())
+  userId      String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_resets")
+}
+
+// =========================================================================
+// AUDIT LOG
+// =========================================================================
+
+model AuditLog {
+  id          String       @id @default(uuid())
+  companyId   String?
+  actorId     String?
+  action      AuditAction
+  entityType  String       // e.g. "User", "Role", "Trip"
+  entityId    String?
+  description String?
+  oldValues   Json?
+  newValues   Json?
+  ip          String?
+  userAgent   String?
+  createdAt   DateTime     @default(now())
+
+  company  Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  actor    User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([actorId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
