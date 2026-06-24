@@ -17,7 +17,7 @@ export interface RefreshTokenPayload {
 }
 
 export function signAccessToken(payload: AccessTokenPayload): string {
-  const options: SignOptions = { expiresIn: env.JWT_ACCESS_EXPIRES_IN };
+  const options: SignOptions = { expiresIn: env.JWT_ACCESS_EXPIRES_IN as SignOptions['expiresIn'] };
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, options);
 }
 
@@ -26,7 +26,7 @@ export function verifyAccessToken(token: string): AccessTokenPayload {
 }
 
 export function signRefreshToken(payload: RefreshTokenPayload): string {
-  const options: SignOptions = { expiresIn: `${env.JWT_REFRESH_EXPIRES_IN_DAYS}d` };
+  const options: SignOptions = { expiresIn: `${env.JWT_REFRESH_EXPIRES_IN_DAYS}d` as SignOptions['expiresIn'] };
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, options);
 }
 
