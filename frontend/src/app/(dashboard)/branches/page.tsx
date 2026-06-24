@@ -20,7 +20,7 @@ export default function BranchesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const context = useAuthStore((s) => s.context);
-  const companyId = context?.companyId;
+  
 
   const { data, isLoading } = useBranches({ page, pageSize: 10, search: search || undefined, companyId });
   const deleteBranch = useDeleteBranch();
