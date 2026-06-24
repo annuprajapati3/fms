@@ -29,7 +29,7 @@ const STATUS_VARIANT: Record<FinancialYearStatus, 'success' | 'secondary' | 'war
 
 export default function FinancialYearsPage() {
   const context = useAuthStore((s) => s.context);
-  const companyId = context?.companyId;
+  const companyId = context?.companyId ?? undefined;
 
   const { data: financialYears, isLoading } = useFinancialYears(companyId);
   const setCurrentFY = useSetCurrentFinancialYear();
