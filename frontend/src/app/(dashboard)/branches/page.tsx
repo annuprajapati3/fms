@@ -18,12 +18,12 @@ import { useAuthStore } from '@/stores/auth-store';
 
 export default function BranchesPage() {
   const [page, setPage] = useState(1);
-const [search, setSearch] = useState('');
-const context = useAuthStore((s) => s.context);
-const companyId = context?.companyId ?? undefined;
+  const [search, setSearch] = useState('');
+  const context = useAuthStore((s) => s.context);
+  const companyId = context?.companyId ?? undefined;
 
-const { data, isLoading } = useBranches({ page, pageSize: 10, search: search || undefined, companyId });
-const deleteBranch = useDeleteBranch();
+  const { data, isLoading } = useBranches({ page, pageSize: 10, search: search || undefined, companyId });
+  const deleteBranch = useDeleteBranch();
 
   const handleDelete = (id: string, name: string) => {
     if (!window.confirm(`Deactivate the ${name} branch? This requires no assigned users.`)) return;
