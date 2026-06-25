@@ -3,7 +3,7 @@ services:
     name: fms-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install --include=dev && npm run prisma:generate && npm run build
+    buildCommand: npm install --include=dev && npm run prisma:generate && npm run build && npm run prisma:migrate:deploy && npm run prisma:seed
     startCommand: npm run start
     healthCheckPath: /health
     plan: free
